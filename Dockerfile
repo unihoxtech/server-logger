@@ -1,31 +1,27 @@
-FROM ubuntu:22.04
+FROM debian:bullseye
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install required packages
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-  wget curl gnupg ca-certificates unzip supervisor \
-  && rm -rf /var/lib/apt/lists/*
+    curl unzip supervisor gnupg2 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Grafana with dependency fix
-RUN wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb && \
-    dpkg -i grafana_10.2.3_amd64.deb || true && \
-    apt-get update && apt-get install -y -f && \
-    rm grafana_10.2.3_amd64.deb
+# Install Grafana
+RUN curl -sL https://dl.grafana.com/oss/release/grafana_10.0.0_amd64.deb -o grafana.deb && \
+    apt install ./grafana.deb -y && rm grafana.deb
 
 # Install Loki
-RUN wget https://github.com/grafana/loki/releases/download/v2.9.3/loki-linux-amd64.zip && \
-    unzip loki-linux-amd64.zip && \
-    mv loki-linux-amd64 /usr/bin/loki && \
-    chmod +x /usr/bin/loki && \
-    rm loki-linux-amd64.zip
+RUN curl -LO https://github.com/grafana/loki/releases/latest/download/loki-linux-amd64.zip && \
+    unzip loki-linux-amd64.zip && mv loki-linux-amd64 /usr/local/bin/loki && chmod +x /usr/local/bin/loki
 
-# Copy configuration
+# Install Promtail
+RUN curl -LO https://github.com/grafana/loki/releases/latest/download/promtail-linux-amd64.zip && \
+    unzip promtail-linux-amd64.zip && mv promtail-linux-amd64 /usr/local/bin/promtail && chmod +x /usr/local/bin/promtail
+
+# Copy configs
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY loki/config.yaml /etc/loki/config.yaml
-COPY supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY promtail/config.yaml /etc/promtail/config.yaml
 
-# Expose ports
-EXPOSE 3000 3100
+EXPOSE 3000 3100 9080
 
-# Start both Grafana and Loki
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/usr/bin/supervisord"]

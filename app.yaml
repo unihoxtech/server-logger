@@ -1,10 +1,10 @@
-name: server-logger
+name: unihox-server-logger
 region: blr
 alerts:
   - rule: DEPLOYMENT_FAILED
   - rule: DOMAIN_FAILED
 services:
-  - name: logger
+  - name: server-logger
     image:
       registry: registry.digitalocean.com
       registry_type: DOCR
@@ -35,18 +35,17 @@ services:
 ingress:
   rules:
     - component:
-        name: logger
+        name: server-logger
       match:
         authority:
-          exact: server-logger-adz7z.ondigitalocean.app
+          exact: unihox-server-logger-lah55.ondigitalocean.app
         path:
           prefix: /
     - component:
-        name: logger
+        name: server-logger
       match:
         authority:
-          exact: server-logger-adz7z.ondigitalocean.app
+          exact: unihox-server-logger-lah55.ondigitalocean.app
         path:
           prefix: /loki
-      rewrite: /loki
 databases: []

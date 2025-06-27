@@ -149,7 +149,7 @@
 #           }]'
 
 #           curl -X POST -H "Content-Type: application/json" -d "$log_data" "$LOKI_URL"
-name: Build and Push Loki Stack to DOCR
+name: Build and Push Loki Stack to DOCR..
 
 on:
   push:

@@ -1,5 +1,8 @@
 name: server-logger
-region: nyc
+region: blr
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
 services:
   - name: logger
     image:
@@ -7,14 +10,43 @@ services:
       registry_type: DOCR
       repository: unihox-live/server-logger
       tag: latest
+      deploy_on_push:
+        enabled: true
+    http_port: 3000
     ports:
       - port: 3000
         protocol: HTTP
       - port: 3100
+        protocol: HTTP
       - port: 9080
+        protocol: HTTP
     instance_count: 1
-    instance_size_slug: basic-xs
+    instance_size_slug: apps-s-1vcpu-1gb
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     run_command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    health_check:
+      http_path: /ready
+      port: 3100
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      failure_threshold: 3
+ingress:
+  rules:
+    - component:
+        name: logger
+      match:
+        authority:
+          exact: server-logger-adz7z.ondigitalocean.app
+        path:
+          prefix: /
+    - component:
+        name: logger
+      match:
+        authority:
+          exact: server-logger-adz7z.ondigitalocean.app
+        path:
+          prefix: /loki
+      rewrite: /loki
 databases: []

@@ -24,9 +24,9 @@ jobs:
 
     steps:
       - name: 📦 Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 
 
-      - name: 🏷️ Set Docker image tag by branch
+      - name: 🏷️ Set Docker image tag based on branch
         run: |
           case "${BRANCH_NAME}" in
             prod)
@@ -40,12 +40,17 @@ jobs:
               exit 1 ;;
           esac
 
-      - name: 🔧 Validate Dockerfile presence
+      - name: 🔍 Validate required files exist
         run: |
-          if [ ! -f ./Dockerfile ]; then
-            echo "❌ Dockerfile not found!"
-            exit 1
-          fi
+          for file in Dockerfile \
+                      promtail/promtail-config.yaml \
+                      loki/config.yaml \
+                      supervisor/supervisord.conf; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing file: $file"
+              exit 1
+            fi
+          done
 
       - name: 🧱 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -66,12 +71,13 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:cache
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:cache
           cache-to: type=inline
 
-      - name: ✅ Verify image pushed
+      - name: ✅ Verify image was pushed
         run: |
-          echo "🛠 Pulling image for verification..."
+          echo "🛠 Pulling image to verify..."
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || {
             echo "❌ Image pull failed"
             exit 1

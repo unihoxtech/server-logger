@@ -11,6 +11,7 @@ RUN apt-get update && \
       libfontconfig1 \
       adduser \
       libglib2.0-0 \
+      nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Grafana
@@ -32,16 +33,17 @@ RUN curl -LO https://github.com/grafana/loki/releases/download/v2.9.4/promtail-l
     chmod +x /usr/local/bin/promtail && \
     rm promtail-linux-amd64.zip
 
-# Create directories for configuration files
-RUN mkdir -p /etc/loki /etc/promtail /etc/supervisor/conf.d /loki /var/log
+# Create directories
+RUN mkdir -p /etc/loki /etc/promtail /etc/supervisor/conf.d /loki /var/log /etc/nginx/conf.d
 
 # Copy configuration files
 COPY loki/loki-config.yaml /etc/loki/loki-config.yaml
 COPY promtail/promtail.yaml /etc/promtail/promtail.yaml
 COPY supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY nginx/nginx.conf /etc/nginx/conf.d/server-logger.conf
 
 # Expose ports
-EXPOSE 3000 3100 9080
+EXPOSE 80 3000 3100 9080
 
 # Start supervisord
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

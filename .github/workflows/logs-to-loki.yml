@@ -78,22 +78,22 @@ jobs:
             exit 1
           }
 
-      - name: Push summary log to Grafana Loki
-        env:
-          LOKI_URL: ${{ secrets.LOKI_URL }}
-        run: |
-          timestamp=$(date +%s%N)
-          log_data='[{
-            "streams": [{
-              "stream": {
-                "job": "github-actions",
-                "repo": "${{ github.repository }}",
-                "branch": "${{ github.ref_name }}",
-                "workflow": "build-and-push"
-              },
-              "values": [
-                ["'"$timestamp"'", "✅ Docker image built and pushed for branch ${{ github.ref_name }} with tag ${{ env.IMAGE_TAG }}"]
-              ]
-            }]
-          }]'
-          curl -X POST -H "Content-Type: application/json" -d "$log_data" "$LOKI_URL"
+      # - name: Push summary log to Grafana Loki
+      #   env:
+      #     LOKI_URL: ${{ secrets.LOKI_URL }}
+      #   run: |
+      #     timestamp=$(date +%s%N)
+      #     log_data='[{
+      #       "streams": [{
+      #         "stream": {
+      #           "job": "github-actions",
+      #           "repo": "${{ github.repository }}",
+      #           "branch": "${{ github.ref_name }}",
+      #           "workflow": "build-and-push"
+      #         },
+      #         "values": [
+      #           ["'"$timestamp"'", "✅ Docker image built and pushed for branch ${{ github.ref_name }} with tag ${{ env.IMAGE_TAG }}"]
+      #         ]
+      #       }]
+      #     }]'
+      #     curl -X POST -H "Content-Type: application/json" -d "$log_data" "$LOKI_URL"

@@ -15,27 +15,33 @@ RUN apt-get update && \
 
 # Install Grafana
 RUN curl -sL https://dl.grafana.com/oss/release/grafana_10.0.0_amd64.deb -o grafana.deb && \
-    apt-get update && \
-    apt-get install -y ./grafana.deb && \
+    dpkg -i grafana.deb && \
     rm grafana.deb
 
 # Install Loki
-RUN curl -LO https://github.com/grafana/loki/releases/latest/download/loki-linux-amd64.zip && \
+RUN curl -LO https://github.com/grafana/loki/releases/download/v2.9.4/loki-linux-amd64.zip && \
     unzip loki-linux-amd64.zip && \
     mv loki-linux-amd64 /usr/local/bin/loki && \
-    chmod +x /usr/local/bin/loki
+    chmod +x /usr/local/bin/loki && \
+    rm loki-linux-amd64.zip
 
 # Install Promtail
-RUN curl -LO https://github.com/grafana/loki/releases/latest/download/promtail-linux-amd64.zip && \
+RUN curl -LO https://github.com/grafana/loki/releases/download/v2.9.4/promtail-linux-amd64.zip && \
     unzip promtail-linux-amd64.zip && \
     mv promtail-linux-amd64 /usr/local/bin/promtail && \
-    chmod +x /usr/local/bin/promtail
+    chmod +x /usr/local/bin/promtail && \
+    rm promtail-linux-amd64.zip
+
+# Create directories for configuration files
+RUN mkdir -p /etc/loki /etc/promtail /etc/supervisor/conf.d /loki /var/log
 
 # Copy configuration files
+COPY loki/loki-config.yaml /etc/loki/loki-config.yaml
+COPY promtail/promtail.yaml /etc/promtail/promtail.yaml
 COPY supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY loki/config.yaml /etc/loki/config.yaml
-COPY promtail/config.yaml /etc/promtail/config.yaml
 
+# Expose ports
 EXPOSE 3000 3100 9080
 
-CMD ["/usr/bin/supervisord"]
+# Start supervisord
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

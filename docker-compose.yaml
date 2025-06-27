@@ -10,6 +10,7 @@ services:
     volumes:
       - ./loki-config.yaml:/etc/loki/loki-config.yaml
       - ./loki-data:/loki
+    platform: linux/amd64
 
   promtail:
     image: grafana/promtail:2.9.4
@@ -20,9 +21,10 @@ services:
     command: -config.file=/etc/promtail/promtail.yaml
     depends_on:
       - loki
+    platform: linux/amd64
 
   grafana:
-    image: grafana/grafana:10.0.0
+    image: grafana/grafana-oss:10.0.0
     container_name: grafana
     ports:
       - "3000:3000"
@@ -32,6 +34,7 @@ services:
       - grafana-storage:/var/lib/grafana
     depends_on:
       - loki
+    platform: linux/amd64
 
 volumes:
   grafana-storage:

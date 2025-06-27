@@ -104,7 +104,7 @@ name: Build & Push Loki + Grafana to DOCR
 
 on:
   push:
-    branches: [main]
+    branches: [prod]
 
 jobs:
   push-loki:

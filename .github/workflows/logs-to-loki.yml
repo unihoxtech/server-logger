@@ -23,28 +23,6 @@ jobs:
       packages: write
 
     steps:
-
-      - name: Send logs to Loki...
-        env:
-          LOKI_URL: http://68.183.83.78:3100/loki/api/v1/push
-        run: |
-          LOG_CONTENT=$(cat mylogs.txt | jq -R -s .)
-          TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)
-          cat <<EOF > loki-payload.json
-          {
-            "streams": [
-              {
-                "labels": "{job=\"github-actions\",repo=\"${GITHUB_REPOSITORY}\"}",
-                "entries": [
-                  { "ts": "$TIMESTAMP", "line": $LOG_CONTENT }
-                ]
-              }
-            ]
-          }
-          EOF
-          curl -XPOST "$LOKI_URL" \
-            -H "Content-Type: application/json" \
-            --data-binary @loki-payload.json
       - name: 📦 Checkout repository
         uses: actions/checkout@v4
 
@@ -107,3 +85,48 @@ jobs:
 
       - name: 📣 Success
         run: echo "✅ Image pushed and verified successfully!"
+
+      - name: 🚢 Auto-Deploy to Droplet
+        if: success()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: 22
+          script: |
+            cd /root/unified-logger || cd ~/unified-logger || exit 1
+            # Pull latest image
+            docker login ${{ env.REGISTRY }} -u help@aiyuh.com -p '${{ secrets.DO_REGISTRY_TOKEN }}'
+            docker pull ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            # Restart the stack (adjust to your setup)
+            docker compose down || docker-compose down || true
+            docker compose up -d || docker-compose up -d
+            docker system prune -f
+
+      - name: Send logs to Loki
+        if: always()
+        env:
+          LOKI_URL: http://68.183.83.78:3100/loki/api/v1/push
+        run: |
+          if [ -f mylogs.txt ]; then
+            LOG_CONTENT=$(cat mylogs.txt | jq -R -s .)
+            TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)
+            cat <<EOF > loki-payload.json
+            {
+              "streams": [
+                {
+                  "labels": "{job=\"github-actions\",repo=\"${GITHUB_REPOSITORY}\"}",
+                  "entries": [
+                    { "ts": "$TIMESTAMP", "line": $LOG_CONTENT }
+                  ]
+                }
+              ]
+            }
+            EOF
+            curl -XPOST "$LOKI_URL" \
+              -H "Content-Type: application/json" \
+              --data-binary @loki-payload.json
+          else
+            echo "No mylogs.txt file found, skipping Loki upload."
+          fi

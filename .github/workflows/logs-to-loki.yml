@@ -1,4 +1,4 @@
-name: Build & Push Unified Logger Image to DOCR
+name: Build and Push Unified Logger Image to DOCR
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - testing
 
 jobs:
-  build-and-push:
+  build_and_push:
     runs-on: ubuntu-latest
     env:
       DOCKER_BUILDKIT: 1
@@ -30,11 +30,11 @@ jobs:
         run: |
           case "${BRANCH_NAME}" in
             prod)
-              echo "IMAGE_TAG=latest" >> $GITHUB_ENV ;;
-            main|staging)
-              echo "IMAGE_TAG=staging" >> $GITHUB_ENV ;;
+              echo "IMAGE_TAG=latest" >> "$GITHUB_ENV" ;;
+            main | staging)
+              echo "IMAGE_TAG=staging" >> "$GITHUB_ENV" ;;
             testing)
-              echo "IMAGE_TAG=testing" >> $GITHUB_ENV ;;
+              echo "IMAGE_TAG=testing" >> "$GITHUB_ENV" ;;
             *)
               echo "❌ Unsupported branch: ${BRANCH_NAME}"
               exit 1 ;;
@@ -42,11 +42,14 @@ jobs:
 
       - name: 🔍 Validate required files exist
         run: |
-          for file in Dockerfile \
-                      promtail/promtail.yaml \
-                      loki/loki-config.yaml \
-                      supervisor/supervisord.conf; do
-            if [ ! -f "$file" ]; then
+          REQUIRED_FILES=(
+            Dockerfile
+            promtail/promtail.yaml
+            loki/loki-config.yaml
+            supervisor/supervisord.conf
+          )
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [[ ! -f "$file" ]]; then
               echo "❌ Missing file: $file"
               exit 1
             fi
@@ -62,7 +65,7 @@ jobs:
           username: help@aiyuh.com
           password: ${{ secrets.DO_REGISTRY_TOKEN }}
 
-      - name: 🚀 Build & Push Docker image
+      - name: 🚀 Build and Push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -78,14 +81,13 @@ jobs:
       - name: ✅ Verify image was pushed
         run: |
           echo "🛠 Pulling image to verify..."
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || {
+          docker pull "${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" || {
             echo "❌ Image pull failed"
             exit 1
           }
 
       - name: 📣 Success
         run: echo "✅ Image pushed and verified successfully!"
-
       - name: 🚢 Auto-Deploy to Droplet
         if: success()
         uses: appleboy/ssh-action@v1.0.3
@@ -96,37 +98,35 @@ jobs:
           port: 22
           script: |
             cd /root/unified-logger || cd ~/unified-logger || exit 1
-            # Pull latest image
             docker login ${{ env.REGISTRY }} -u help@aiyuh.com -p '${{ secrets.DO_REGISTRY_TOKEN }}'
             docker pull ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            # Restart the stack (adjust to your setup)
             docker compose down || docker-compose down || true
             docker compose up -d || docker-compose up -d
             docker system prune -f
 
-      - name: Send logs to Loki
+      - name: 📤 Send logs to Loki
         if: always()
         env:
           LOKI_URL: http://68.183.83.78:3100/loki/api/v1/push
         run: |
-          if [ -f mylogs.txt ]; then
+          if [[ -f mylogs.txt ]]; then
             LOG_CONTENT=$(cat mylogs.txt | jq -R -s .)
             TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)
-            cat <<EOF > loki-payload.json
-            {
-              "streams": [
+
+            echo "{
+              \"streams\": [
                 {
-                  "labels": "{job=\"github-actions\",repo=\"${GITHUB_REPOSITORY}\"}",
-                  "entries": [
-                    { "ts": "$TIMESTAMP", "line": $LOG_CONTENT }
+                  \"labels\": \"{job=\\\"github-actions\\\",repo=\\\"${GITHUB_REPOSITORY}\\\"}\",
+                  \"entries\": [
+                    { \"ts\": \"${TIMESTAMP}\", \"line\": ${LOG_CONTENT} }
                   ]
                 }
               ]
-            }
-            EOF
+            }" > loki-payload.json
+
             curl -XPOST "$LOKI_URL" \
               -H "Content-Type: application/json" \
               --data-binary @loki-payload.json
           else
-            echo "No mylogs.txt file found, skipping Loki upload."
-          fi
+            echo "⚠️ No mylogs.txt file found, skipping Loki upload."
+          fi  

@@ -12,8 +12,10 @@ services:
       tag: latest
       deploy_on_push:
         enabled: true
-    http_port: 3000
+    http_port: 80
     ports:
+      - port: 80
+        protocol: HTTP
       - port: 3000
         protocol: HTTP
       - port: 3100
@@ -48,4 +50,11 @@ ingress:
           exact: unihox-server-logger-lah55.ondigitalocean.app
         path:
           prefix: /loki
+    - component:
+        name: server-logger
+      match:
+        authority:
+          exact: unihox-server-logger-lah55.ondigitalocean.app
+        path:
+          prefix: /promtail
 databases: []

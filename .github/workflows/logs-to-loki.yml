@@ -24,7 +24,7 @@ jobs:
 
     steps:
 
-      - name: Send logs to Loki
+      - name: Send logs to Loki...
         env:
           LOKI_URL: http://68.183.83.78:3100/loki/api/v1/push
         run: |

@@ -43,7 +43,7 @@ jobs:
       - name: 🔍 Validate required files exist
         run: |
           for file in Dockerfile \
-                      promtail/promtail-config.yaml \
+                      promtail/config.yaml \
                       loki/config.yaml \
                       supervisor/supervisord.conf; do
             if [ ! -f "$file" ]; then

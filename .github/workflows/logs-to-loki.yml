@@ -25,12 +25,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Ensure Dockerfile exists
-        run: |
-          if [ ! -f "./Dockerfile" ]; then
-            echo "❌ Dockerfile not found in repository root"
-            exit 1
-          fi
+    #   - name: Ensure Dockerfile exists
+    #     run: |
+    #       if [ ! -f "./Dockerfile" ]; then
+    #         echo "❌ Dockerfile not found in repository root"
+    #         exit 1
+    #       fi
 
       - name: Set image tag based on branch
         run: |

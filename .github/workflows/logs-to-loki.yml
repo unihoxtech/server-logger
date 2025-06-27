@@ -23,6 +23,28 @@ jobs:
       packages: write
 
     steps:
+
+      - name: Send logs to Loki
+        env:
+          LOKI_URL: http://68.183.83.78:3100/loki/api/v1/push
+        run: |
+          LOG_CONTENT=$(cat mylogs.txt | jq -R -s .)
+          TIMESTAMP=$(date --utc +%Y-%m-%dT%H:%M:%SZ)
+          cat <<EOF > loki-payload.json
+          {
+            "streams": [
+              {
+                "labels": "{job=\"github-actions\",repo=\"${GITHUB_REPOSITORY}\"}",
+                "entries": [
+                  { "ts": "$TIMESTAMP", "line": $LOG_CONTENT }
+                ]
+              }
+            ]
+          }
+          EOF
+          curl -XPOST "$LOKI_URL" \
+            -H "Content-Type: application/json" \
+            --data-binary @loki-payload.json
       - name: 📦 Checkout repository
         uses: actions/checkout@v4
 

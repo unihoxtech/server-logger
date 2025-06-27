@@ -153,7 +153,11 @@ name: Build and Push Loki Stack to DOCR
 
 on:
   push:
-    branches: [main]
+    branches:
+      - prod
+      - main
+      - staging
+      - testing
 
 jobs:
   build-and-push:

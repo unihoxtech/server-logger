@@ -14,15 +14,23 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     env:
       REGISTRY: registry.digitalocean.com
       REPO_NAME: unihox-live
-      IMAGE_NAME: unihox-server-logger
+      IMAGE_NAME: unihox-saas-product
       BRANCH_NAME: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Ensure Dockerfile exists
+        run: |
+          if [ ! -f "./Dockerfile" ]; then
+            echo "❌ Dockerfile not found in repository root"
+            exit 1
+          fi
 
       - name: Set image tag based on branch
         run: |
@@ -58,6 +66,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -68,15 +77,15 @@ jobs:
             BUILD_VERSION=${{ github.sha }}
             BRANCH_NAME=${{ env.BRANCH_NAME }}
 
-      - name: Verify push
+      - name: Verify Docker image push
         run: |
-          echo "Verifying image availability..."
+          echo "🔍 Verifying image availability..."
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} || {
-            echo "Failed to verify pushed image"
+            echo "❌ Failed to verify pushed image"
             exit 1
           }
 
-      - name: Push logs to Loki
+      - name: Push summary log to Grafana Loki
         env:
           LOKI_URL: ${{ secrets.LOKI_URL }}
         run: |
@@ -90,7 +99,7 @@ jobs:
                 "workflow": "build-and-push"
               },
               "values": [
-                ["'"$timestamp"'", "Image pushed for branch ${{ github.ref_name }} with tag ${{ env.IMAGE_TAG }}"]
+                ["'"$timestamp"'", "✅ Docker image built and pushed for branch ${{ github.ref_name }} with tag ${{ env.IMAGE_TAG }}"]
               ]
             }]
           }]'

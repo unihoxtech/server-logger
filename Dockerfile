@@ -18,7 +18,7 @@ RUN curl -LO https://github.com/grafana/loki/releases/latest/download/promtail-l
     unzip promtail-linux-amd64.zip && mv promtail-linux-amd64 /usr/local/bin/promtail && chmod +x /usr/local/bin/promtail
 
 # Copy configs
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY loki/config.yaml /etc/loki/config.yaml
 COPY promtail/config.yaml /etc/promtail/config.yaml
 

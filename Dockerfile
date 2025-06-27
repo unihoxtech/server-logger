@@ -7,9 +7,10 @@ RUN apt-get update && apt-get install -y \
   wget curl gnupg ca-certificates unzip supervisor \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Grafana
+# Install Grafana with dependency fix
 RUN wget https://dl.grafana.com/oss/release/grafana_10.2.3_amd64.deb && \
-    dpkg -i grafana_10.2.3_amd64.deb && \
+    dpkg -i grafana_10.2.3_amd64.deb || true && \
+    apt-get update && apt-get install -y -f && \
     rm grafana_10.2.3_amd64.deb
 
 # Install Loki

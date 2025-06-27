@@ -1,0 +1,20 @@
+name: server-logger
+region: nyc
+services:
+  - name: logger
+    image:
+      registry: registry.digitalocean.com
+      registry_type: DOCR
+      repository: unihox-live/server-logger
+      tag: latest
+    ports:
+      - port: 3000
+        protocol: HTTP
+      - port: 3100
+      - port: 9080
+    instance_count: 1
+    instance_size_slug: basic-xs
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    run_command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+databases: []

@@ -1,40 +1,21 @@
 version: '3.8'
 
 services:
-  loki:
-    image: grafana/loki:2.9.4
-    container_name: loki
+  logger:
+    image: registry.digitalocean.com/unihox-live/server-logger:${TAG:-latest}
+    container_name: logger
     ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/loki-config.yaml
-    volumes:
-      - ./loki-config.yaml:/etc/loki/loki-config.yaml
-      - ./loki-data:/loki
-    platform: linux/amd64
-
-  promtail:
-    image: grafana/promtail:2.9.4
-    container_name: promtail
-    volumes:
-      - /var/log:/var/log
-      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
-    command: -config.file=/etc/promtail/promtail.yaml
-    depends_on:
-      - loki
-    platform: linux/amd64
-
-  grafana:
-    image: grafana/grafana-oss:10.0.0
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - "3000:3000" # Grafana
+      - "3100:3100" # Loki
+      - "9080:9080" # Promtail
     volumes:
       - grafana-storage:/var/lib/grafana
-    depends_on:
-      - loki
+      - loki-data:/loki
+      - /var/log:/var/log
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     platform: linux/amd64
 
 volumes:
   grafana-storage:
+  loki-data:
